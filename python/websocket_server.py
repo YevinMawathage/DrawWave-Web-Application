@@ -220,6 +220,57 @@ class WebSocketServer:
                                     "color": color
                                 })
                                 await self.broadcast_to_session(session_id, color_message, exclude=websocket)
+                    
+                    elif message_type == "mouse_draw":
+                        if session_id in self.sessions:
+                            # Forward mouse drawing events to all other clients in the session
+                            # This enables real-time collaborative drawing with mouse
+                            start = data.get("start", {"x": 0, "y": 0})
+                            end = data.get("end", {"x": 0, "y": 0})
+                            color = data.get("color", "#000000")
+                            
+                            # Convert to OpenCV format for canvas
+                            start_point = (start["x"], start["y"])
+                            end_point = (end["x"], end["y"])
+                            
+                            # Parse the color if it's in hex format
+                            if isinstance(color, str) and color.startswith("#"):
+                                r = int(color[1:3], 16)
+                                g = int(color[3:5], 16)
+                                b = int(color[5:7], 16)
+                                cv_color = [b, g, r]  # OpenCV uses BGR
+                            else:
+                                cv_color = [0, 0, 0]  # Default to black
+                            
+                            with self.sessions[session_id]["lock"]:
+                                # Draw line on canvas
+                                canvas = self.sessions[session_id]["canvas"]
+                                canvas.draw_line(start_point, end_point, cv_color)
+                                
+                                # Get updated canvas state
+                                canvas_image = canvas.get_canvas()
+                                
+                            # Forward drawing event to all other clients
+                            draw_message = json.dumps({
+                                "type": "mouse_draw",
+                                "start": start,
+                                "end": end,
+                                "color": color
+                            })
+                            await self.broadcast_to_session(session_id, draw_message, exclude=websocket)
+                    
+                    elif message_type == "drawing_update":
+                        if session_id in self.sessions:
+                            # Handle complete drawing canvas updates
+                            drawing_data = data.get("drawing", "")
+                            
+                            if drawing_data and drawing_data.startswith("data:image/png;base64,"):
+                                # Forward the drawing update to all other clients
+                                drawing_message = json.dumps({
+                                    "type": "drawing_update",
+                                    "drawing": drawing_data
+                                })
+                                await self.broadcast_to_session(session_id, drawing_message, exclude=websocket)
 
                 except Exception as e:
                     print(f"Error processing message: {e}")

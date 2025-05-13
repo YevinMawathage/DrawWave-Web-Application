@@ -99,3 +99,35 @@ class Canvas:
 
     def get_canvas(self):
         return self.canvas
+        
+    def draw_line(self, start_point, end_point, color=None):
+        """
+        Draw a line directly between two points with specified coordinates.
+        This is used for mouse drawing where we have exact pixel positions.
+        
+        Args:
+            start_point: Tuple of (x, y) coordinates for the start of the line
+            end_point: Tuple of (x, y) coordinates for the end of the line
+            color: Optional BGR color tuple. If None, uses the current color
+        """
+        if color is None:
+            color = self.color
+            
+        # Make sure points are within canvas bounds
+        x1, y1 = start_point
+        x2, y2 = end_point
+        
+        x1 = max(0, min(int(x1), self.width-1))
+        y1 = max(0, min(int(y1), self.height-1))
+        x2 = max(0, min(int(x2), self.width-1))
+        y2 = max(0, min(int(y2), self.height-1))
+        
+        # Draw the line
+        cv2.line(self.canvas, (x1, y1), (x2, y2), color, self.brush_size)
+        
+        # Add to history if changed
+        if not self.history or not np.array_equal(self.history[-1], self.canvas):
+            self.history.append(self.canvas.copy())
+            if len(self.history) > self.history_limit:
+                self.history.pop(0)  # Remove oldest item if we exceed limit
+            self.redo_stack.clear()

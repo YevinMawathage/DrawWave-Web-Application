@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 const VirtualPainter = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
   const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -12,10 +13,132 @@ const VirtualPainter = () => {
   
   // Session state
   const [sessionId, setSessionId] = useState<string>('');
-  const [sessionInput, setSessionInput] = useState<string>('');
+  const [createRoomInput, setCreateRoomInput] = useState<string>('');
+  const [joinRoomInput, setJoinRoomInput] = useState<string>('');
   const [participants, setParticipants] = useState<number>(0);
   const [inSession, setInSession] = useState<boolean>(false);
   const [cameraReady, setCameraReady] = useState<boolean>(false);
+  const [userName, setUserName] = useState<string>('');
+  
+  // Mouse drawing state
+  const [isMouseDrawing, setIsMouseDrawing] = useState<boolean>(false);
+  const [isDrawing, setIsDrawing] = useState<boolean>(false);
+  const [prevPoint, setPrevPoint] = useState<{x: number, y: number} | null>(null);
+
+  // Mouse drawing functions  
+  const toggleMouseDrawing = () => {
+    const newValue = !isMouseDrawing;
+    setIsMouseDrawing(newValue);
+    
+    // If mouse drawing is turned on, pause the video processing to stop gesture drawing
+    if (newValue && videoRef.current) {
+      const videoStream = videoRef.current.srcObject as MediaStream;
+      if (videoStream) {
+        // Pause or resume video tracks based on mouse drawing state
+        videoStream.getVideoTracks().forEach(track => {
+          track.enabled = !newValue; // Disable tracks when mouse drawing is enabled
+        });
+      }
+    } else if (videoRef.current) {
+      // Resume video if mouse drawing is turned off
+      const videoStream = videoRef.current.srcObject as MediaStream;
+      if (videoStream) {
+        videoStream.getVideoTracks().forEach(track => {
+          track.enabled = true;
+        });
+      }
+    }
+  };
+  
+  const startDrawing = (x: number, y: number) => {
+    setIsDrawing(true);
+    setPrevPoint({ x, y });
+  };
+  
+  const draw = (x: number, y: number) => {
+    if (!isDrawing || !prevPoint) return;
+    
+    const ctx = drawingCanvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.beginPath();
+    ctx.moveTo(prevPoint.x, prevPoint.y);
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = selectedColor;
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    
+    // Send drawing data to server
+    if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+      wsConnection.send(JSON.stringify({
+        type: 'mouse_draw',
+        start: { x: prevPoint.x, y: prevPoint.y },
+        end: { x, y },
+        color: selectedColor
+      }));
+      
+      // Also send the updated canvas state
+      const drawingCanvas = drawingCanvasRef.current;
+      if (drawingCanvas) {
+        const drawingDataURL = drawingCanvas.toDataURL('image/png');
+        wsConnection.send(JSON.stringify({
+          type: 'drawing_update',
+          drawing: drawingDataURL
+        }));
+      }
+    }
+    
+    setPrevPoint({ x, y });
+  };
+  
+  const stopDrawing = () => {
+    setIsDrawing(false);
+    setPrevPoint(null);
+  };
+  
+  // Mouse event handlers
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isMouseDrawing) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    
+    startDrawing(x, y);
+  };
+  
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isMouseDrawing || !isDrawing) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    
+    draw(x, y);
+  };
+  
+  const handleMouseUp = () => {
+    if (!isMouseDrawing) return;
+    stopDrawing();
+  };
+  
+  const handleMouseLeave = () => {
+    if (!isMouseDrawing) return;
+    stopDrawing();
+  };
 
   // Initialize websocket connection
   useEffect(() => {
@@ -48,6 +171,10 @@ const VirtualPainter = () => {
         let ctx: CanvasRenderingContext2D | null;
         
         switch (data.type) {
+          case 'clear_canvas':
+            handleClearCanvas();
+            break;
+            
           case 'canvas_update':
             canvasImage = new Image();
             canvasImage.onload = () => {
@@ -65,22 +192,47 @@ const VirtualPainter = () => {
             setInSession(true);
             setParticipants(1); // Creator is the first participant
             setError(null);
+            console.log('Room created successfully. Session ID:', data.session_id);
+            // Clear input fields since we're now in a session
+            setCreateRoomInput('');
+            setJoinRoomInput('');
             break;
             
           case 'session_joined':
             setSessionId(data.session_id);
             setInSession(true);
             setParticipants(data.participants);
-            // Set initial canvas state
-            canvasImage = new Image();
-            canvasImage.onload = () => {
-              ctx = canvasRef.current?.getContext('2d') ?? null;
-              if (ctx && canvasRef.current) {
-                ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-                ctx.drawImage(canvasImage, 0, 0);
-              }
-            };
-            canvasImage.src = data.canvas;
+            console.log('Successfully joined room. Session ID:', data.session_id);
+            
+            // Set initial canvas state if one exists
+            if (data.canvas) {
+              canvasImage = new Image();
+              canvasImage.onload = () => {
+                ctx = canvasRef.current?.getContext('2d') ?? null;
+                if (ctx && canvasRef.current) {
+                  ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                  ctx.drawImage(canvasImage, 0, 0);
+                }
+              };
+              canvasImage.src = data.canvas;
+            }
+            
+            // Also restore any drawing layer data if it exists
+            if (data.drawing && drawingCanvasRef.current) {
+              const drawingImage = new Image();
+              drawingImage.onload = () => {
+                const drawingCtx = drawingCanvasRef.current?.getContext('2d');
+                if (drawingCtx && drawingCanvasRef.current) {
+                  // Keep existing drawings
+                  drawingCtx.drawImage(drawingImage, 0, 0);
+                }
+              };
+              drawingImage.src = data.drawing;
+            }
+            
+            // Clear input fields since we're now in a session
+            setCreateRoomInput('');
+            setJoinRoomInput('');
             setError(null);
             break;
             
@@ -96,9 +248,43 @@ const VirtualPainter = () => {
             // Optionally handle color changes from other participants
             break;
             
+          case 'mouse_draw':
+            // Handle drawing data from other participants
+            if (drawingCanvasRef.current) {
+              const ctx = drawingCanvasRef.current.getContext('2d');
+              if (ctx) {
+                ctx.beginPath();
+                ctx.moveTo(data.start.x, data.start.y);
+                ctx.lineTo(data.end.x, data.end.y);
+                ctx.strokeStyle = data.color;
+                ctx.lineWidth = 5;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+              }
+            }
+            break;
+            
+          case 'drawing_update':
+            // Handle complete drawing canvas updates from other users
+            if (drawingCanvasRef.current && data.drawing) {
+              const drawingImage = new Image();
+              drawingImage.onload = () => {
+                const drawingCtx = drawingCanvasRef.current?.getContext('2d');
+                if (drawingCtx && drawingCanvasRef.current) {
+                  drawingCtx.drawImage(drawingImage, 0, 0);
+                }
+              };
+              drawingImage.src = data.drawing;
+            }
+            break;
+            
           case 'error':
             console.error('Server error:', data.message);
             setError(`Server error: ${data.message}`);
+            // If the error is related to session joining, we'll keep the user in the form view
+            if (data.errorCode === 'session_not_found' || data.errorCode === 'invalid_session') {
+              setInSession(false);
+            }
             break;
             
           default:
@@ -175,6 +361,16 @@ const VirtualPainter = () => {
     console.log('Setting up frame sending...');
     
     const sendFrame = () => {
+      // Skip frame sending if mouse drawing is enabled
+      if (isMouseDrawing) {
+        // Still keep the loop going, just don't send frames
+        const frameInterval = 1000 / frameRate;
+        requestRef.current = requestAnimationFrame(() => {
+          setTimeout(sendFrame, frameInterval);
+        });
+        return;
+      }
+      
       if (videoRef.current && wsConnection && wsConnection.readyState === WebSocket.OPEN) {
         // Only proceed if video has dimensions and is playing
         if (!videoRef.current.videoWidth || !videoRef.current.videoHeight) {
@@ -213,6 +409,7 @@ const VirtualPainter = () => {
             return;
           }
           
+          // Only send frame to server if not in mouse drawing mode
           wsConnection.send(JSON.stringify({
             type: 'frame',
             frame
@@ -231,41 +428,112 @@ const VirtualPainter = () => {
     
     sendFrame();
     
+    // Set up drawing canvas to match size of main canvas
+    if (canvasRef.current && drawingCanvasRef.current) {
+      drawingCanvasRef.current.width = canvasRef.current.width;
+      drawingCanvasRef.current.height = canvasRef.current.height;
+    }
+    
     return () => {
       if (requestRef.current) {
         cancelAnimationFrame(requestRef.current);
       }
     };
-  }, [wsConnection, connected, frameRate, inSession]);
+  }, [wsConnection, connected, frameRate, inSession, isMouseDrawing]);
 
   // Session management functions
   const handleCreateSession = () => {
+    // Validate that the user has entered a username
+    if (!userName.trim()) {
+      setError('Please enter your name');
+      return;
+    }
+    
+    // Validate that a room code has been generated
+    if (!createRoomInput.trim()) {
+      setError('Please generate a room code first');
+      return;
+    }
+    
     if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
       wsConnection.send(JSON.stringify({
-        type: 'create_session'
+        type: 'create_session',
+        session_id: createRoomInput.trim(),
+        user_name: userName
       }));
     }
   };
   
+  const generateRoomId = () => {
+    // Generate a random 6-character alphanumeric room ID
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    setCreateRoomInput(result);
+    setError(null); // Clear any previous errors
+  };
+  
+  const copyRoomId = () => {
+    if (!createRoomInput.trim()) return;
+    
+    navigator.clipboard.writeText(createRoomInput).then(() => {
+      // Provide user feedback
+      setError('Room code copied to clipboard!');
+      // Clear the success message after 2 seconds
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
+    }).catch(err => {
+      console.error('Failed to copy room code:', err);
+      setError('Failed to copy room code. Please try again.');
+    });
+  };
+  
   const handleJoinSession = () => {
-    if (!sessionInput.trim()) {
+    if (!joinRoomInput.trim()) {
       setError('Please enter a valid session ID');
+      return;
+    }
+    
+    if (!userName.trim()) {
+      setError('Please enter your name');
       return;
     }
     
     if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
       wsConnection.send(JSON.stringify({
         type: 'join_session',
-        session_id: sessionInput.trim()
+        session_id: joinRoomInput.trim(),
+        user_name: userName
       }));
     }
   };
   
   const handleClearCanvas = () => {
     if (wsConnection && wsConnection.readyState === WebSocket.OPEN && inSession) {
+      // Clear the drawing canvas locally first
+      if (drawingCanvasRef.current) {
+        const drawingCtx = drawingCanvasRef.current.getContext('2d');
+        if (drawingCtx) {
+          drawingCtx.clearRect(0, 0, drawingCanvasRef.current.width, drawingCanvasRef.current.height);
+        }
+      }
+      
+      // Then send clear canvas command to server for all clients
       wsConnection.send(JSON.stringify({
         type: 'clear_canvas'
       }));
+      
+      // Also send empty drawing update to ensure drawing layer is cleared on all clients
+      if (drawingCanvasRef.current) {
+        const emptyDrawing = drawingCanvasRef.current.toDataURL('image/png');
+        wsConnection.send(JSON.stringify({
+          type: 'drawing_update',
+          drawing: emptyDrawing
+        }));
+      }
     }
   };
 
@@ -290,10 +558,10 @@ const VirtualPainter = () => {
   const renderSessionControls = () => {
     if (inSession) {
       return (
-        <div className="session-info bg-indigo-50 p-4 rounded-md mb-4 flex items-center justify-between">
-          <div className="text-black">
+        <div className="session-info bg-indigo-50 p-3 sm:p-4 rounded-md mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 max-w-7xl mx-auto">
+          <div className="text-black flex flex-wrap gap-2 items-center">
             <span className="font-medium text-black">Session ID:</span> <span className="bg-white px-2 py-1 rounded text-black">{sessionId}</span>
-            <span className="ml-4 font-medium text-black">Participants:</span> <span className="bg-white px-2 py-1 rounded text-black">{participants}</span>
+            <span className="font-medium text-black ml-0 sm:ml-4">Participants:</span> <span className="bg-white px-2 py-1 rounded text-black">{participants}</span>
           </div>
           <div className="text-sm text-black">
             Share this ID with others to let them join your drawing session
@@ -303,40 +571,89 @@ const VirtualPainter = () => {
     }
     
     return (
-      <div className="session-setup bg-white p-6 rounded-lg shadow-md mb-6">
-        <h2 className="text-xl font-bold mb-4 text-indigo-700">Collaborative Drawing</h2>
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 p-4 border border-indigo-200 rounded-md">
-            <h3 className="text-lg font-medium mb-2">Create a New Session</h3>
-            <p className="text-sm text-gray-600 mb-4">Start a new collaborative drawing session and share the ID with others</p>
-            <button 
-              onClick={handleCreateSession}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded"
-              disabled={!connected}
-            >
-              Create Session
-            </button>
-          </div>
-          
-          <div className="flex-1 p-4 border border-indigo-200 rounded-md">
-            <h3 className="text-lg font-medium mb-2">Join Existing Session</h3>
-            <p className="text-sm text-gray-600 mb-2">Enter a session ID to join an existing drawing session</p>
-            <div className="flex">
+      <div className="session-setup bg-white p-4 rounded-lg shadow-md mx-auto my-4 flex flex-col w-full max-w-4xl">
+        <div className="flex flex-col md:flex-row justify-between w-full gap-4">
+          {/* Create Room Section */}
+          <div className="flex-1 flex flex-col items-center">
+            <h2 className="text-xl font-bold mb-4 text-indigo-700">Create Room</h2>
+            
+            <input
+              type="text"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder="Enter your name"
+              className="w-full mb-4 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-base bg-gray-50"
+            />
+            
+            <div className="w-full mb-4 flex">
               <input
                 type="text"
-                value={sessionInput}
-                onChange={(e) => setSessionInput(e.target.value)}
-                placeholder="Enter session ID"
-                className="flex-1 border border-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={createRoomInput}
+                onChange={(e) => setCreateRoomInput(e.target.value)}
+                placeholder="Room ID"
+                className="flex-1 border border-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-base bg-gray-50"
+                readOnly
               />
               <button
-                onClick={handleJoinSession}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-r-md"
-                disabled={!connected || !sessionInput.trim()}
+                onClick={generateRoomId}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 text-sm"
               >
-                Join
+                Generate
+              </button>
+              <button
+                onClick={copyRoomId}
+                className="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-r-md text-sm"
+                disabled={!createRoomInput.trim()}
+              >
+                Copy
               </button>
             </div>
+            
+            <button 
+              onClick={handleCreateSession}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md text-base"
+              disabled={!connected || !userName.trim() || !createRoomInput.trim()}
+            >
+              Create Room
+            </button>
+            {!userName.trim() && <p className="text-xs text-gray-500 mt-2 text-center">Please enter your name</p>}
+            {!createRoomInput.trim() && <p className="text-xs text-gray-500 mt-2 text-center">Please generate a room code</p>}
+          </div>
+          
+          {/* OR Divider */}
+          <div className="flex items-center justify-center">
+            <span className="text-lg font-medium text-gray-500 px-4">OR</span>
+          </div>
+          
+          {/* Join Room Section */}
+          <div className="flex-1 flex flex-col items-center">
+            <h2 className="text-xl font-bold mb-4 text-indigo-700">Join Room</h2>
+            
+            <input
+              type="text"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder="Enter your name"
+              className="w-full mb-4 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-base bg-gray-50"
+            />
+            
+            <input
+              type="text"
+              value={joinRoomInput}
+              onChange={(e) => setJoinRoomInput(e.target.value)}
+              placeholder="Enter room code"
+              className="w-full mb-4 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-base bg-gray-50"
+            />
+            
+            <button
+              onClick={handleJoinSession}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md text-base"
+              disabled={!connected || !userName.trim() || !joinRoomInput.trim()}
+            >
+              Join Room
+            </button>
+            {!userName.trim() && <p className="text-xs text-gray-500 mt-2 text-center">Please enter your name</p>}
+            {!joinRoomInput.trim() && <p className="text-xs text-gray-500 mt-2 text-center">Please enter a room code</p>}
           </div>
         </div>
       </div>
@@ -344,9 +661,9 @@ const VirtualPainter = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
+    <div className="max-w-full w-full mx-auto px-0 sm:px-1">
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded mb-4 text-sm sm:text-base max-w-7xl mx-auto">
           {error}
         </div>
       )}
@@ -357,11 +674,11 @@ const VirtualPainter = () => {
       {/* Only show main content when in a session */}
       {inSession && (
         <div>
-          <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
-            <div className="relative rounded-lg overflow-hidden shadow-lg bg-white">
+          <div className="flex flex-col xl:flex-row gap-4 justify-center items-center w-full max-w-7xl mx-auto">
+            <div className="relative rounded-lg overflow-hidden shadow-lg bg-white w-full max-w-full md:max-w-2xl xl:max-w-3xl">
               <video 
                 ref={videoRef}
-                className="w-full h-auto max-w-lg"
+                className="w-full h-auto" 
                 muted
                 playsInline
               ></video>
@@ -418,42 +735,63 @@ const VirtualPainter = () => {
               </div>
             </div>
             
-            <div className="relative rounded-lg overflow-hidden shadow-lg bg-white">
-              <canvas 
-                ref={canvasRef}
-                width={640}
-                height={480}
-                className="w-full h-auto max-w-lg"
-              ></canvas>
+            <div className="relative rounded-lg overflow-hidden shadow-lg bg-white w-full max-w-full md:max-w-2xl xl:max-w-3xl" style={{position: 'relative'}}>
+              <div style={{position: 'relative', width: '100%', height: 'auto'}}>
+                <canvas 
+                  ref={canvasRef}
+                  width={640}
+                  height={480}
+                  className="w-full h-auto"
+                  style={{position: 'absolute', top: 0, left: 0, zIndex: 0}}
+                ></canvas>
+                <canvas 
+                  ref={drawingCanvasRef}
+                  width={640}
+                  height={480}
+                  className="w-full h-auto"
+                  style={{position: 'absolute', top: 0, left: 0, zIndex: 10, backgroundColor: 'transparent'}}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseLeave}
+                ></canvas>
+                <div style={{position: 'relative', width: '100%', paddingTop: '75%'}}></div>
+              </div>
             </div>
           </div>
           
-          <div className="mt-6 flex justify-center space-x-4">
+          <div className="mt-4 sm:mt-6 flex flex-wrap justify-center gap-2 sm:gap-4">
             <button 
               onClick={handleClearCanvas}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-3 sm:px-4 rounded text-sm sm:text-base transition-colors duration-200"
             >
               Clear Canvas
             </button>
+            <button 
+              onClick={toggleMouseDrawing}
+              className={`${isMouseDrawing ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-700'} text-white font-medium py-2 px-3 sm:px-4 rounded text-sm sm:text-base transition-colors duration-200`}
+            >
+              {isMouseDrawing ? 'Mouse Drawing: ON' : 'Mouse Drawing: OFF'}
+            </button>
             
             <div className="flex items-center">
-              <label htmlFor="colorPicker" className="mr-2">Color:</label>
+              <label htmlFor="colorPicker" className="mr-2 text-sm sm:text-base">Color:</label>
               <input 
                 id="colorPicker"
                 type="color"
                 value={selectedColor}
                 onChange={handleColorChange}
-                className="w-10 h-10 rounded cursor-pointer"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded cursor-pointer"
               />
             </div>
             
-            <div className="flex items-center space-x-2">
-              <label htmlFor="frameRate" className="text-gray-700">FPS:</label>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <label htmlFor="frameRate" className="text-gray-700 text-sm sm:text-base">FPS:</label>
               <select
                 id="frameRate"
                 value={frameRate}
                 onChange={(e) => setFrameRate(Number(e.target.value))}
-                className="border rounded px-2 py-1"
+                className="border rounded px-1 sm:px-2 py-1 text-sm sm:text-base"
               >
                 <option value="5">5</option>
                 <option value="10">10</option>
@@ -463,9 +801,9 @@ const VirtualPainter = () => {
             </div>
           </div>
           
-          <div className="mt-8 bg-blue-50 p-4 rounded-lg shadow-inner">
-            <h2 className="text-xl font-semibold text-indigo-700 mb-2">Gesture Guide:</h2>
-            <ul className="list-disc pl-5 space-y-1 text-gray-700">
+          <div className="mt-6 sm:mt-8 bg-blue-50 p-3 sm:p-4 rounded-lg shadow-inner max-w-3xl mx-auto w-full">
+            <h2 className="text-lg sm:text-xl font-semibold text-indigo-700 mb-2">Gesture Guide:</h2>
+            <ul className="list-disc pl-5 space-y-1 text-gray-700 text-sm sm:text-base">
               <li>✏️ <strong>Draw:</strong> Extend index finger only</li>
               <li>🧽 <strong>Erase:</strong> Extend index and middle fingers</li>
               <li>✋ <strong>Stop Drawing:</strong> Show all five fingers</li>
