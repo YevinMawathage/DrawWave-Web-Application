@@ -1,6 +1,8 @@
-# AI Virtual Painter with Web Interface
+# DrawWave - AI Virtual Painter with Web Interface
 
 This project allows you to draw on a virtual canvas using hand gestures. The frontend captures webcam video and sends it to a Python backend, which processes the hand gestures and updates the canvas accordingly.
+
+![DrawWave Application](DrawWave%20-%20Poster%20-%2010898817.jpg)
 
 ## Project Structure
 

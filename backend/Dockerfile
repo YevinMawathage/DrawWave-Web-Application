@@ -10,6 +10,7 @@ RUN npm install
 
 
 COPY . .
+COPY .env /app/.env
 
 EXPOSE 5000
 

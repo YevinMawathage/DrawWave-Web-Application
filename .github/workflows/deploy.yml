@@ -31,9 +31,29 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/drawwave-frontend:latest
-          # Disable caching to avoid registry reference issues
-          no-cache: true
+          tags: yevinraizel/drawwave-frontend:latest
+      
+      # Create backend .env file before building the backend
+      - name: Create backend .env file
+        run: |
+          mkdir -p ./backend
+          cat > ./backend/.env << EOL
+          MONGODB_URI=${{ secrets.MONGODB_URI }}
+          PORT=5000
+          
+          # JWT Secret
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          
+          # Session Secret
+          SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+          
+          # Google OAuth credentials
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          
+          # Frontend URL for redirects
+          FRONTEND_URL=https://app.drawwave.space
+          EOL
 
       # Build and push Backend Docker image
       - name: Build and push Backend
@@ -42,9 +62,7 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/drawwave-backend:latest
-          # Disable caching to avoid registry reference issues
-          no-cache: true
+          tags: yevinraizel/drawwave-backend:latest
 
       # Build and push Python Docker image
       - name: Build and push Python
@@ -53,9 +71,7 @@ jobs:
           context: ./python
           file: ./python/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/drawwave-python:latest
-          # Disable caching to avoid registry reference issues
-          no-cache: true
+          tags: yevinraizel/drawwave-python:latest
 
       # Deploy to VPS using SSH
       - name: Deploy to VPS
@@ -67,16 +83,16 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script: |
             # Login to Docker Hub to pull images
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+            
             
             # Pull the latest images
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/drawwave-frontend:latest
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/drawwave-backend:latest
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/drawwave-python:latest
+            docker pull yevinraizel/drawwave-frontend:latest
+            docker pull yevinraizel/drawwave-backend:latest
+            docker pull yevinraizel/drawwave-python:latest
             
             # Create backend .env file from GitHub secrets
             mkdir -p ~/drawwave/backend
-            cat > ~/drawwave/backend/.env << 'EOL'
+            cat > ~/drawwave/backend/.env << EOL
             MONGODB_URI=${{ secrets.MONGODB_URI }}
             PORT=5000
             
@@ -91,39 +107,36 @@ jobs:
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
             
             # Frontend URL for redirects
-            FRONTEND_URL=http://${{ secrets.VPS_HOST }}
+            FRONTEND_URL=https://app.drawwave.space/
             EOL
             
-            # Create docker-compose.yml if it doesn't exist
+            # Create docker-compose.yml file
             mkdir -p ~/drawwave
-            cat > ~/drawwave/docker-compose.yml << 'EOL'
+            export DOCKERHUB_USERNAME="yevinraizel"
+            export VPS_HOST="${{ secrets.VPS_HOST }}"
+            
+            cat > ~/drawwave/docker-compose.yml << EOL
             version: '3.8'
             
             services:
               frontend:
-                image: ${{ secrets.DOCKERHUB_USERNAME }}/drawwave-frontend:latest
+                image: yevinraizel/drawwave-frontend:latest
                 restart: unless-stopped
                 ports:
-                  - "80:80"
+                  - "81:81"
                 environment:
-                  - VITE_WEBSOCKET_URL=ws://${VPS_HOST}:8765
-                  - VITE_WEBCAM_WEBSOCKET_URL=ws://${VPS_HOST}:8080
-                  - VITE_API_URL=http://${VPS_HOST}:5000/api
+                  - VITE_WEBSOCKET_URL=wss://inference.drawwave.space
+                  - VITE_WEBCAM_WEBSOCKET_URL=wss://inference.drawwave.space
+                  - VITE_API_URL=https://api.drawwave.space/api
             
               backend:
-                image: ${{ secrets.DOCKERHUB_USERNAME }}/drawwave-backend:latest
+                image: yevinraizel/drawwave-backend:latest
                 restart: unless-stopped
                 ports:
                   - "5000:5000"
-                volumes:
-                  - ~/drawwave/backend/.env:/app/.env
-                environment:
-                  - NODE_ENV=production
-                depends_on:
-                  - mongo
             
               python:
-                image: ${{ secrets.DOCKERHUB_USERNAME }}/drawwave-python:latest
+                image: yevinraizel/drawwave-python:latest
                 restart: unless-stopped
                 ports:
                   - "8765:8765"
@@ -142,8 +155,6 @@ jobs:
             
             # Stop any running containers and start fresh with our updated images
             cd ~/drawwave
-            export VPS_HOST=${{ secrets.VPS_HOST }}
-            export SESSION_SECRET=${{ secrets.SESSION_SECRET }}
             docker-compose down
             docker-compose up -d
             

@@ -11,12 +11,11 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors({
   origin:["https://app.drawwave.space", "http://localhost:5173"] ,
-  credentials: true, 
+  credentials: true, // Important for authentication
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
 }));
 app.use(bodyParser.json());
-
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'drawwave_secret',
