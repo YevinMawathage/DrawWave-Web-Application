@@ -9,18 +9,14 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-<<<<<<< Updated upstream
-// Middleware
-app.use(cors());
-=======
 app.use(cors({
   origin:["https://app.drawwave.space", "http://localhost:5173"] ,
   credentials: true, 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
 }));
->>>>>>> Stashed changes
 app.use(bodyParser.json());
+
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'drawwave_secret',
@@ -42,6 +38,7 @@ app.use('/api/sessions', require('./routes/sessions'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/rooms', require('./routes/rooms'));
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/health', require('./routes/health'))
 
 app.get('/', (req, res) => {
   res.send('DrawWave Session Management API');
