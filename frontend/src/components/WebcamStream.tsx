@@ -13,15 +13,11 @@ const WebcamStream = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize webcam and WebSocket
   useEffect(() => {
-    // Set up WebSocket connection
     const setupWebSocket = () => {
-      // Get WebSocket URL from environment variables or fallback to default
       let WS_URL = import.meta.env.VITE_WEBCAM_WEBSOCKET_URL || 'ws://localhost:8080';
       console.log('Connecting to webcam WebSocket server at:', WS_URL);
       
-      // Create a new WebSocket connection
       const ws = new WebSocket(WS_URL);
       
       ws.onopen = () => {
@@ -50,14 +46,12 @@ const WebcamStream = () => {
       ws.onclose = () => {
         console.log('WebSocket connection closed');
         setIsConnected(false);
-        // Try to reconnect after a delay
         setTimeout(setupWebSocket, 3000);
       };
       
       wsRef.current = ws;
     };
 
-    // Initialize webcam
     const setupWebcam = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -77,14 +71,11 @@ const WebcamStream = () => {
     setupWebcam();
     setupWebSocket();
 
-    // Cleanup function
     return () => {
-      // Close WebSocket connection
       if (wsRef.current) {
         wsRef.current.close();
       }
       
-      // Stop webcam stream
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
@@ -92,7 +83,6 @@ const WebcamStream = () => {
     };
   }, []);
 
-  // Set up frame capture and sending
   useEffect(() => {
     if (!videoRef.current || !canvasRef.current || !wsRef.current || !isConnected) {
       return;
@@ -107,25 +97,20 @@ const WebcamStream = () => {
       return;
     }
 
-    // Frame capture interval (30fps = approx. 33ms)
     const intervalId = setInterval(() => {
-      // Only proceed if the video is playing and WebSocket is connected
       if (video.readyState === video.HAVE_ENOUGH_DATA && wsRef.current?.readyState === WebSocket.OPEN) {
-        // Set canvas dimensions to match video
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
-        // Draw the current video frame on the canvas
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        // Convert canvas to blob and send via WebSocket
         canvas.toBlob((blob) => {
           if (blob && wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(blob);
           }
-        }, 'image/jpeg', 0.7); // Adjust quality as needed
+        }, 'image/jpeg', 0.7); 
       }
-    }, 33); // ~30fps
+    }, 33); 
 
     return () => {
       clearInterval(intervalId);

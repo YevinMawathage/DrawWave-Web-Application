@@ -1,11 +1,11 @@
 import sys
 from PyQt5.QtWidgets import QApplication
-from virtual_painter_gui import VirtualPainterGUI  # Import the canvas GUI directly
+from virtual_painter_gui import VirtualPainterGUI  
 
 def main():
     app = QApplication(sys.argv)
-    painter_gui = VirtualPainterGUI()  # Instantiate VirtualPainterGUI instead of StartScreen
-    painter_gui.show()  # Show the canvas window directly
+    painter_gui = VirtualPainterGUI() 
+    painter_gui.show()  
     sys.exit(app.exec_())
 
 if __name__ == "__main__":

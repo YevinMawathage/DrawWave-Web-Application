@@ -1,21 +1,17 @@
 const express = require('express');
 const request = require('supertest');
 
-// Mock implementation of routes
 const mockSessionsRouter = express.Router();
 const mockUsersRouter = express.Router();
 const mockRoomsRouter = express.Router();
 
-// Sample data to use in our tests
 let sessions = [];
 let users = [];
 let rooms = [];
 
-// Setup app
 const app = express();
 app.use(express.json());
 
-// Mock Sessions routes
 mockSessionsRouter.get('/', (req, res) => {
   res.status(200).json(sessions);
 });
@@ -52,7 +48,6 @@ mockSessionsRouter.delete('/:id', (req, res) => {
   res.status(200).json({ message: 'Session deleted' });
 });
 
-// Mock Users routes
 mockUsersRouter.get('/', (req, res) => {
   res.status(200).json(users);
 });
@@ -74,7 +69,6 @@ mockUsersRouter.get('/:id', (req, res) => {
   res.status(200).json(user);
 });
 
-// Mock Rooms routes
 mockRoomsRouter.get('/', (req, res) => {
   res.status(200).json(rooms);
 });
@@ -96,12 +90,10 @@ mockRoomsRouter.get('/:id', (req, res) => {
   res.status(200).json(room);
 });
 
-// Set up routes
 app.use('/api/sessions', mockSessionsRouter);
 app.use('/api/users', mockUsersRouter);
 app.use('/api/rooms', mockRoomsRouter);
 
-// Reset data before each test
 beforeEach(() => {
   sessions = [];
   users = [];
@@ -132,7 +124,6 @@ describe('Session API Routes', () => {
   });
   
   test('GET /api/sessions/:id should return a specific session', async () => {
-    // First create a session
     const newSession = {
       sessionId: 'test-session-get',
       hostUser: 'test-user',
@@ -144,14 +135,12 @@ describe('Session API Routes', () => {
       .post('/api/sessions')
       .send(newSession);
       
-    // Then try to retrieve it
     const response = await request(app).get(`/api/sessions/${newSession.sessionId}`);
     expect(response.status).toBe(200);
     expect(response.body.sessionId).toBe(newSession.sessionId);
   });
   
   test('PUT /api/sessions/:id should update a session', async () => {
-    // First create a session
     const newSession = {
       sessionId: 'test-session-update',
       hostUser: 'test-user',
@@ -163,7 +152,6 @@ describe('Session API Routes', () => {
       .post('/api/sessions')
       .send(newSession);
       
-    // Then update it
     const updatedSession = {
       active: false
     };
@@ -177,7 +165,6 @@ describe('Session API Routes', () => {
   });
   
   test('DELETE /api/sessions/:id should delete a session', async () => {
-    // First create a session
     const newSession = {
       sessionId: 'test-session-delete',
       hostUser: 'test-user',
@@ -189,18 +176,14 @@ describe('Session API Routes', () => {
       .post('/api/sessions')
       .send(newSession);
       
-    // Then delete it
     const response = await request(app).delete(`/api/sessions/${newSession.sessionId}`);
     expect(response.status).toBe(200);
     
-    // Verify it's gone
     const getResponse = await request(app).get(`/api/sessions/${newSession.sessionId}`);
     expect(getResponse.status).toBe(404);
   });
   
-  // This test specifically focuses on session persistence mentioned in memories
   test('Session should maintain drawing layer data after reconnection', async () => {
-    // Create a session with initial data
     const sessionWithLayers = {
       sessionId: 'persistent-session',
       hostUser: 'persistence-test-user',
@@ -219,7 +202,6 @@ describe('Session API Routes', () => {
       .post('/api/sessions')
       .send(sessionWithLayers);
     
-    // Test retrieving the session data after "reconnection"
     const response = await request(app).get('/api/sessions/persistent-session');
     expect(response.status).toBe(200);
     expect(response.body.sessionId).toBe('persistent-session');
@@ -251,7 +233,6 @@ describe('Room API Routes', () => {
   });
   
   test('GET /api/rooms/:id should return a specific room', async () => {
-    // First create a room
     const newRoom = {
       name: 'Get Test Room',
       description: 'A room to test GET',
@@ -264,7 +245,6 @@ describe('Room API Routes', () => {
       
     const roomId = createResponse.body._id;
       
-    // Then try to retrieve it
     const response = await request(app).get(`/api/rooms/${roomId}`);
     expect(response.status).toBe(200);
     expect(response.body.name).toBe(newRoom.name);
@@ -294,7 +274,6 @@ describe('User API Routes', () => {
   });
   
   test('GET /api/users/:id should return a specific user', async () => {
-    // First create a user
     const newUser = {
       username: 'getuser',
       email: 'get@example.com',
@@ -307,17 +286,14 @@ describe('User API Routes', () => {
       
     const userId = createResponse.body._id;
       
-    // Then try to retrieve it
     const response = await request(app).get(`/api/users/${userId}`);
     expect(response.status).toBe(200);
     expect(response.body.username).toBe(newUser.username);
   });
 });
 
-// Test specifically for session reconnection functionality mentioned in memories
 describe('Session Reconnection Tests', () => {
   test('Client should receive drawing layer data on reconnection', async () => {
-    // Create a sample session with drawing layers
     const sessionWithDrawingData = {
       sessionId: 'reconnect-session',
       hostUser: 'host-user',
@@ -337,15 +313,12 @@ describe('Session Reconnection Tests', () => {
       ]
     };
     
-    // Store the session
     await request(app)
       .post('/api/sessions')
       .send(sessionWithDrawingData);
       
-    // Simulating a client reconnection - fetching the session
     const response = await request(app).get(`/api/sessions/${sessionWithDrawingData.sessionId}`);
     
-    // Assert that the session includes both canvas data and drawing layers
     expect(response.status).toBe(200);
     expect(response.body.drawingLayers).toBeDefined();
     expect(response.body.drawingLayers.length).toBe(2);

@@ -3,12 +3,9 @@ import json
 import sys
 import os
 
-# Mock WebSocket server implementation for testing
 class MockWebSocketServer:
     def __init__(self):
-        # Dictionary to track sessions: {session_id: {"canvas": canvas_data, "clients": set(), "drawing_layers": []}}
         self.sessions = {}
-        # Mapping of clients to their sessions: {client_id: session_id}
         self.client_sessions = {}
         
     def create_session(self, host_name):
@@ -27,11 +24,9 @@ class MockWebSocketServer:
         if session_id not in self.sessions:
             return None
             
-        # Add client to session
         self.sessions[session_id]["clients"].add(user_name)
         self.client_sessions[user_name] = session_id
         
-        # Return session data
         return {
             "session_id": session_id,
             "canvas_data": self.sessions[session_id]["canvas"],
@@ -59,7 +54,6 @@ class MockWebSocketServer:
 
 class TestWebSocketServer(unittest.TestCase):
     def setUp(self):
-        # Create a mock server for testing
         self.server = MockWebSocketServer()
 
     def test_create_session(self):

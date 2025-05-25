@@ -11,7 +11,7 @@ class Persistence:
             print(f"[ERROR] Database connection failed: {e}")
     
     def save_drawing(self, data):
-        data_blob = pickle.dumps(data)  # Convert the drawing data to binary format
+        data_blob = pickle.dumps(data)  
         self.cursor.execute("INSERT INTO drawings (data) VALUES (?)", (data_blob,))
         self.connection.commit()
 

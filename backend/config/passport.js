@@ -12,17 +12,17 @@ module.exports = function() {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
-          // Check if user already exists
+     
           let user = await User.findOne({ googleId: profile.id });
           
           if (user) {
-            // Update user information if they already exist
+          
             user.lastActive = new Date();
             await user.save();
             return done(null, user);
           }
           
-          // Create new user if they don't exist
+          
           const newUser = new User({
             googleId: profile.id,
             userName: profile.displayName,
@@ -43,12 +43,11 @@ module.exports = function() {
     )
   );
 
-  // Serialize user for session
+  
   passport.serializeUser((user, done) => {
     done(null, user.id);
   });
 
-  // Deserialize user from session
   passport.deserializeUser(async (id, done) => {
     try {
       const user = await User.findById(id);

@@ -11,7 +11,7 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Get token from URL query params
+       
         const params = new URLSearchParams(location.search);
         const token = params.get('token');
 
@@ -20,16 +20,16 @@ const AuthCallback = () => {
           return;
         }
 
-        // Store token in localStorage
+
         localStorage.setItem('auth_token', token);
         
-        // Verify the token and update auth state
+      
         const isAuthenticated = await checkAuthStatus();
         
         if (isAuthenticated) {
-          // Redirect to home or specified redirect path
+
           const redirectPath = localStorage.getItem('auth_redirect') || '/';
-          localStorage.removeItem('auth_redirect'); // Clear the stored path
+          localStorage.removeItem('auth_redirect'); 
           navigate(redirectPath);
         } else {
           setError('Authentication failed');

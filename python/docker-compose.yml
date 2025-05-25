@@ -9,18 +9,18 @@ services:
     ports:
       - "8765:8765"
     volumes:
-      # Mount the code directory for development
+    
       - .:/app
     restart: unless-stopped
     networks:
       - drawwave-network
       - backend-network
     environment:
-      - API_URL=http://backend:5000/api  # Connect to backend by service name
+      - API_URL=http://backend:5000/api  
 
 networks:
   drawwave-network:
     driver: bridge
   backend-network:
     external: true
-    name: backend_default  # This should match the network name created by the backend docker-compose
+    name: backend_default  

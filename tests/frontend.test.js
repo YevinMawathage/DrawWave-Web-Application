@@ -1,6 +1,4 @@
-/**
- * @jest-environment jsdom
- */
+
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
@@ -10,8 +8,6 @@ import VirtualPainter from '../frontend/src/components/VirtualPainter';
 import Desktop from '../frontend/src/components/Desktop';
 import ReconnectionHandler from '../frontend/src/components/ReconnectionHandler';
 import Home from '../frontend/src/components/Home';
-
-// Mock the WebSocket
 class MockWebSocket {
   constructor(url) {
     this.url = url;
@@ -22,7 +18,6 @@ class MockWebSocket {
     this.onerror = jest.fn();
     this.send = jest.fn();
     
-    // Automatically call onopen when created
     setTimeout(() => {
       if (this.onopen) this.onopen();
     }, 0);
@@ -33,7 +28,6 @@ class MockWebSocket {
     if (this.onclose) this.onclose({ code: 1000 });
   }
 
-  // Helper to simulate receiving a message
   mockReceiveMessage(data) {
     if (this.onmessage) {
       this.onmessage({ data: JSON.stringify(data) });
@@ -41,7 +35,6 @@ class MockWebSocket {
   }
 }
 
-// Mock localStorage
 const localStorageMock = (function() {
   let store = {};
   return {
@@ -63,7 +56,6 @@ const localStorageMock = (function() {
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 global.WebSocket = MockWebSocket;
 
-// Mock useNavigate
 const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
@@ -89,16 +81,13 @@ describe('VirtualPainter Component', () => {
       </BrowserRouter>
     );
 
-    // Should attempt to connect to WebSocket server
     expect(global.WebSocket).toHaveBeenCalled();
     const wsInstance = global.WebSocket.mock.instances[0];
     
-    // Verify it attempts to join the session
     await waitFor(() => {
       expect(wsInstance.send).toHaveBeenCalled();
     });
     
-    // Check session data was sent
     const sentData = JSON.parse(wsInstance.send.mock.calls[0][0]);
     expect(sentData.type).toBe('join_session');
     expect(sentData.session_id).toBe('test-session');
@@ -118,7 +107,6 @@ describe('VirtualPainter Component', () => {
     
     const wsInstance = global.WebSocket.mock.instances[0];
     
-    // Simulate a drawing update coming from the server
     act(() => {
       wsInstance.mockReceiveMessage({
         type: 'draw_update',
@@ -128,16 +116,13 @@ describe('VirtualPainter Component', () => {
       });
     });
     
-    // Check that the component handles the drawing update
-    // Note: This is a simplified test as we can't easily test actual canvas rendering
+    
     await waitFor(() => {
-      // If we had access to the internal canvas, we'd check that it was updated
-      expect(true).toBeTruthy(); // Placeholder assertion
+      expect(true).toBeTruthy(); 
     });
   });
 
   test('handles reconnection after disconnection', async () => {
-    // Setup: simulate stored session info
     localStorage.setItem('sessionId', 'test-session');
     localStorage.setItem('userName', 'Test User');
     
@@ -153,17 +138,14 @@ describe('VirtualPainter Component', () => {
     
     const wsInstance = global.WebSocket.mock.instances[0];
     
-    // Simulate WebSocket closing
     act(() => {
       wsInstance.close();
     });
     
-    // A new WebSocket should be created for reconnection
     await waitFor(() => {
       expect(global.WebSocket.mock.instances.length).toBeGreaterThan(1);
     });
     
-    // The new WebSocket should try to join with the same session
     const newWsInstance = global.WebSocket.mock.instances[1];
     await waitFor(() => {
       expect(newWsInstance.send).toHaveBeenCalled();
@@ -183,7 +165,6 @@ describe('Desktop Component', () => {
       </BrowserRouter>
     );
     
-    // Check that the component structure is as expected
     expect(screen.getByTestId('desktop-container')).toBeInTheDocument();
     expect(screen.getByTestId('navbar-component')).toBeInTheDocument();
     expect(screen.getByTestId('virtual-painter')).toBeInTheDocument();
@@ -196,14 +177,11 @@ describe('Desktop Component', () => {
       </BrowserRouter>
     );
     
-    // Find and click the leave session button
     const leaveButton = screen.getByText('Leave Session');
     fireEvent.click(leaveButton);
     
-    // Should navigate to home
     expect(mockNavigate).toHaveBeenCalledWith('/');
     
-    // Should clear session storage
     expect(localStorage.removeItem).toHaveBeenCalledWith('sessionId');
     expect(localStorage.removeItem).toHaveBeenCalledWith('userName');
   });
@@ -216,7 +194,6 @@ describe('ReconnectionHandler Component', () => {
   });
   
   test('attempts to reconnect when session info is available', async () => {
-    // Setup: simulate stored session info
     localStorage.setItem('sessionId', 'test-session');
     localStorage.setItem('userName', 'Test User');
     
@@ -226,7 +203,6 @@ describe('ReconnectionHandler Component', () => {
       </BrowserRouter>
     );
     
-    // Should attempt to redirect to the session
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/session/test-session', {
         state: { userName: 'Test User' }
@@ -241,7 +217,6 @@ describe('ReconnectionHandler Component', () => {
       </BrowserRouter>
     );
     
-    // Should not redirect anywhere
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 });
@@ -254,19 +229,15 @@ describe('Home Component Session Creation', () => {
       </BrowserRouter>
     );
     
-    // Enter a username
     const userNameInput = screen.getByPlaceholderText('Your Name');
     fireEvent.change(userNameInput, { target: { value: 'Test User' } });
     
-    // Click create session button
     const createButton = screen.getByText('Create New Session');
     fireEvent.click(createButton);
     
-    // Should set up a WebSocket
     expect(global.WebSocket).toHaveBeenCalled();
     const wsInstance = global.WebSocket.mock.instances[0];
     
-    // Should send create session message
     await waitFor(() => {
       expect(wsInstance.send).toHaveBeenCalled();
     });
@@ -275,7 +246,6 @@ describe('Home Component Session Creation', () => {
     expect(sentData.type).toBe('create_session');
     expect(sentData.user_name).toBe('Test User');
     
-    // Simulate server response with session ID
     act(() => {
       wsInstance.mockReceiveMessage({
         type: 'session_created',
@@ -284,14 +254,12 @@ describe('Home Component Session Creation', () => {
       });
     });
     
-    // Should navigate to the new session
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/session/new-session-123', {
         state: { userName: 'Test User', isHost: true }
       });
     });
     
-    // Should store session info in localStorage
     expect(localStorage.setItem).toHaveBeenCalledWith('sessionId', 'new-session-123');
     expect(localStorage.setItem).toHaveBeenCalledWith('userName', 'Test User');
   });

@@ -8,23 +8,17 @@ interface ReconnectionHandlerProps {
   onReconnect: () => void;
 }
 
-/**
- * A component that provides user feedback and automatic reconnection logic
- * when the connection is lost or page is refreshed during an active session.
- */
+
 const ReconnectionHandler: React.FC<ReconnectionHandlerProps> = ({ 
   isConnected, 
   inSession, 
-  // These props may be needed in future enhancements, but we'll comment them out for now
-  // sessionId, 
-  // userName, 
+
   onReconnect 
 }) => {
   const [isReconnecting, setIsReconnecting] = useState<boolean>(false);
   const [countdown, setCountdown] = useState<number>(5);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  // Reset countdown when reconnection starts
   useEffect(() => {
     if (!isConnected && inSession) {
       setIsReconnecting(true);
@@ -34,7 +28,6 @@ const ReconnectionHandler: React.FC<ReconnectionHandlerProps> = ({
     }
   }, [isConnected, inSession]);
 
-  // Handle countdown and automatic reconnection
   useEffect(() => {
     if (!isReconnecting) return;
     
@@ -45,7 +38,6 @@ const ReconnectionHandler: React.FC<ReconnectionHandlerProps> = ({
       
       return () => clearTimeout(timer);
     } else {
-      // Attempt reconnection
       try {
         console.log("Attempting automatic reconnection...");
         onReconnect();
@@ -56,11 +48,10 @@ const ReconnectionHandler: React.FC<ReconnectionHandlerProps> = ({
     }
   }, [isReconnecting, countdown, onReconnect]);
 
-  // Manual reconnection handler
   const handleManualReconnect = useCallback(() => {
     try {
       setCountdown(0);
-      setErrorMessage(''); // Clear any previous error messages
+      setErrorMessage(''); 
       console.log('Manual reconnection triggered');
       onReconnect();
     } catch (error) {

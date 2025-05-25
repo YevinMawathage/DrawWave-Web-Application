@@ -3,7 +3,6 @@ const router = express.Router();
 const User = require('../models/User');
 const Session = require('../models/Session');
 
-// Create a new user
 router.post('/create', async (req, res) => {
   try {
     const { userName, sessionId, roomId } = req.body;
@@ -12,7 +11,6 @@ router.post('/create', async (req, res) => {
       return res.status(400).json({ success: false, message: 'All fields are required' });
     }
     
-    // Create new user
     const newUser = new User({
       userName,
       sessionId,
@@ -35,7 +33,6 @@ router.post('/create', async (req, res) => {
   }
 });
 
-// Get all users in a session
 router.get('/session/:sessionId', async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -51,7 +48,6 @@ router.get('/session/:sessionId', async (req, res) => {
   }
 });
 
-// Update user activity
 router.put('/activity/:id', async (req, res) => {
   try {
     const user = await User.findById(req.params.id);

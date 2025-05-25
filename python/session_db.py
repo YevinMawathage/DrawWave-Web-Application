@@ -9,30 +9,28 @@ class SessionDB:
     A class to interact with the Node.js backend for session management.
     """
     def __init__(self, api_url=None):
-        # Get the API URL from environment variable or fall back to default
-        # This allows configuring the API URL via Docker environment variables
+        
         import os
-        # Try different possible API URLs when in Docker
-        # The host.docker.internal hostname allows reaching the host machine from inside Docker
+        
         self.api_url = api_url or os.environ.get('API_URL', None)
         
         if not self.api_url:
-            # If API_URL wasn't provided, try common Docker connection patterns
+           
             possible_urls = [
-                'http://localhost:5000/api',           # Standard localhost
-                'http://host.docker.internal:5000/api', # Docker for Windows/Mac special DNS
-                'http://172.17.0.1:5000/api',          # Default Docker gateway
-                'http://backend:5000/api'              # Service name if on same network
+                'http://localhost:5000/api',           
+                'http://host.docker.internal:5000/api', 
+                'http://172.17.0.1:5000/api',          
+                'http://backend:5000/api'             
             ]
             
-            self.api_url = possible_urls[0]  # Start with localhost as default
+            self.api_url = possible_urls[0]  
             print(f"No API_URL provided, will try multiple connection options")
         else:
             print(f"Using API URL from configuration: {self.api_url}")
             
-        self.connection_enabled = True      # Flag to track if we should keep trying to connect
-        self.connection_attempts = 0        # Count connection attempts
-        self.max_connection_attempts = 3    # Maximum number of retries
+        self.connection_enabled = True      
+        self.connection_attempts = 0        
+        self.max_connection_attempts = 3    
     
     def check_session_exists(self, session_id):
         """
@@ -83,7 +81,7 @@ class SessionDB:
                         "sessionId": session_id,
                         "roomId": room_id
                     },
-                    timeout=10  # Add timeout to prevent hanging requests
+                    timeout=10  
                 )
                 
                 data = response.json()
@@ -92,7 +90,6 @@ class SessionDB:
                     print(f"Successfully created user: {user_name} for session {session_id}")
                     return True, data.get('data')
                 elif response.status_code == 400 and "already exists" in data.get('message', ''):
-                    # User or session already exists, consider this a success
                     print(f"User already exists: {user_name} for session {session_id}")
                     return True, None
                 else:
@@ -101,14 +98,14 @@ class SessionDB:
                     
                     if retry_count < max_retries - 1:
                         retry_count += 1
-                        time.sleep(1)  # Wait before retrying
+                        time.sleep(1) 
                         continue
                     return False, None
             except requests.exceptions.RequestException as e:
                 print(f"Network error creating user: {e}")
                 if retry_count < max_retries - 1:
                     retry_count += 1
-                    time.sleep(1)  # Wait before retrying
+                    time.sleep(1)  
                     continue
                 return False, None
             except Exception as e:
@@ -121,7 +118,7 @@ class SessionDB:
         Update the canvas state in MongoDB. This allows canvas persistence between sessions.
         """
         try:
-            # Remove the data URL prefix if present
+          
             if canvas_base64.startswith('data:image/png;base64,'):
                 canvas_base64 = canvas_base64.replace('data:image/png;base64,', '')
                 
@@ -151,21 +148,18 @@ class SessionDB:
             print("Connection to API disabled due to previous failures, skipping DB operations")
             return None
             
-        # If we've reached max retries, stop trying to connect
+        
         if self.connection_attempts >= self.max_connection_attempts:
             print(f"Reached maximum connection attempts ({self.max_connection_attempts}), disabling API connection")
             self.connection_enabled = False
             return None
             
-        # Increment connection attempts
         self.connection_attempts += 1
         
         try:
-            # Set a short timeout to avoid hanging
             response = requests.get(f"{self.api_url}/sessions/active", timeout=3)
             data = response.json()
             
-            # Reset attempts counter on success
             self.connection_attempts = 0
             print(f"Successfully connected to API at {self.api_url}")
             
@@ -175,17 +169,15 @@ class SessionDB:
         except requests.exceptions.ConnectionError as e:
             print(f"Error connecting to API at {self.api_url}: {e}")
             
-            # Try alternate URLs if available
             if self.connection_attempts < self.max_connection_attempts:
                 import os
                 possible_urls = [
-                    'http://localhost:5000/api',           # Standard localhost
-                    'http://host.docker.internal:5000/api', # Docker for Windows/Mac special DNS
-                    'http://172.17.0.1:5000/api',          # Default Docker gateway
-                    'http://backend:5000/api'              # Service name if on same network
+                    'http://localhost:5000/api',           
+                    'http://host.docker.internal:5000/api', 
+                    'http://172.17.0.1:5000/api',          
+                    'http://backend:5000/api'              
                 ]
                 
-                # Use a different URL for the next attempt
                 next_url_index = self.connection_attempts % len(possible_urls)
                 self.api_url = possible_urls[next_url_index]
                 print(f"Switching to alternate API URL: {self.api_url} for next attempt")
