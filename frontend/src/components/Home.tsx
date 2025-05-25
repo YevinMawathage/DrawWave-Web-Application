@@ -143,7 +143,6 @@ const Home = ({ onStartRoom }: HomeProps) => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen w-full relative overflow-hidden bg-black" style={{ pointerEvents: 'auto' }}>
-      {/* Floating button to quickly scroll to video */}
       <button
         onClick={scrollToVideo}
         className="fixed right-5 bottom-5 z-50 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 rounded-full shadow-lg transform hover:scale-110 transition-all duration-300 group"
@@ -156,7 +155,6 @@ const Home = ({ onStartRoom }: HomeProps) => {
         </svg>
       </button>
       
-      {/* Authentication Modal */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
           <div className="bg-[#1a002a] border border-purple-500 rounded-lg shadow-lg p-6 max-w-md w-full transform transition-all animate-fadeIn">
@@ -171,13 +169,12 @@ const Home = ({ onStartRoom }: HomeProps) => {
           </div>
         </div>
       )}
-      {/* Canvas for matrix rain effect */}
       <canvas 
         ref={canvasRef}
         className="absolute inset-0 w-full h-full z-0"
         style={{ pointerEvents: 'none' }}
       />
-            {/* Enhanced 3D Backdrop with dynamic grid lines and glow effects */}
+            
         <div 
           className="absolute inset-0 bg-[#0a001a] z-10 overflow-hidden opacity-70 scene-3d" 
           style={{ 
@@ -195,10 +192,10 @@ const Home = ({ onStartRoom }: HomeProps) => {
             el.style.setProperty('--mouse-y', `${y}%`);
           }}
         >
-          {/* Dynamic lighting overlay that follows mouse position */}
+          
           <div className="lighting-overlay"></div>
           
-          {/* Animated Gradient background */}
+         
           <div 
             className="absolute inset-0 bg-gradient-to-br from-[#1a002a] via-[#150025] to-[#0a001a] opacity-80"
             style={{
@@ -207,7 +204,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
               filter: `hue-rotate(${scrollY * 0.05}deg) brightness(${1 + scrollY * 0.0005})`,
             }}
           >
-            {/* Nebula effect */}
+           
             <div className="absolute inset-0 opacity-30" style={{
               backgroundImage: `
                 radial-gradient(circle at 30% 50%, rgba(168, 85, 247, 0.3) 0%, transparent 25%),
@@ -219,7 +216,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
             }}></div>
           </div>
           
-          {/* 3D Horizontal grid floor */}
+         
           <div 
             className="absolute inset-0 grid-floor" 
             style={{
@@ -234,7 +231,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
             }}
           ></div>
           
-          {/* 3D Vertical grid walls */}
+          
           <div 
             className="absolute inset-0 grid-wall" 
             style={{
@@ -243,7 +240,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
             }}
           ></div>
 
-          {/* Floating particles (increased number for more depth) */}
+          
           <div className="absolute inset-0 particle-container">
             {[...Array(25)].map((_, index) => (
               <div 
@@ -264,7 +261,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
             ))}
           </div>
           
-          {/* 3D floating light orbs with depth - adds another dimension to the scene */}
+          
           {[...Array(8)].map((_, index) => (
             <div 
               key={`orb-${index}`}
@@ -284,10 +281,10 @@ const Home = ({ onStartRoom }: HomeProps) => {
           ))}
         </div>
       
-      {/* Center glow */}
+     
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[40vh] z-20 rounded-full bg-gradient-to-r from-[#a855f7]/10 to-[#8b5cf6]/10 blur-3xl transform ${animate ? 'opacity-100 scale-100' : 'opacity-0 scale-90'} transition-all duration-2000 ease-in-out animate-pulse-slow`}></div>
       
-      {/* Camera icons around edges */}
+      
       <div className="absolute top-8 left-8 z-30">
         <div className="w-6 h-6 border border-[#a855f7]/30 rounded-full flex items-center justify-center">
           <div className="w-2 h-2 bg-[#a855f7]/50 rounded-full animate-ping-slow"></div>
@@ -309,7 +306,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
         </div>
       </div>
       
-      {/* Content Container */}
+   
       <div className="z-40 flex flex-col items-center justify-center text-center w-full px-4 sm:px-6 md:px-8 min-h-[100vh] transform translate-y-0 opacity-100 transition-all duration-1000 ease-out perspective-[1000px]">
         <div className="relative w-full max-w-4xl mx-auto scale-100 opacity-100 transition-all duration-1000 ease-out animation-delay-300 transform-gpu hover:rotate-y-3 hover:scale-105 transition-transform">
           <h1 className="text-[4.5rem] sm:text-[6rem] md:text-[7rem] font-bold mb-6 text-white transform-gpu" style={{ textShadow: 'rgba(168, 85, 247, 0.5) 0px 0px 40px' }}>
@@ -323,7 +320,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
         </div>
         <p className="text-[#a855f7]/80 text-3xl sm:text-4xl mb-8 opacity-100 transition-all duration-1000 ease-out animation-delay-400 transform-gpu hover:scale-105 transition-transform">Introducing Collaborative Drawing</p>
         
-        {/* User Info Display - Show when authenticated */}
+        
         {isAuthenticated && user && (
           <div className="mb-8 opacity-100 transition-all duration-700 ease-out animation-delay-450 transform-gpu relative" ref={profileMenuRef}>
             <div 
@@ -335,7 +332,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
                 alt="Profile" 
                 className="w-10 h-10 rounded-full border-2 border-purple-500/50"
                 onError={(e) => {
-                  // Fallback to initial if image fails to load
+                  
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                   (target.nextElementSibling as HTMLElement).style.display = 'flex';
@@ -350,16 +347,16 @@ const Home = ({ onStartRoom }: HomeProps) => {
               <div className="text-white text-base font-medium">Signed in as <span className="text-purple-300">{user.name}</span></div>
             </div>
             
-            {/* Simple modal centered on screen */}
+          
             {showProfileMenu && (
               <>
-                {/* Dark overlay */}
+              
                 <div 
                   className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[999]" 
                   onClick={() => setShowProfileMenu(false)}
                 ></div>
                 
-                {/* Modal */}
+                
                 <div 
                   className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-50 sm:w-96 md:w-[200px] bg-[#1a002a] border-4 border-purple-500 rounded-2xl shadow-2xl py-4 px-4 z-[1000]"
                   style={{
@@ -424,7 +421,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
         
 
         
-        {/* Bottom icons row with hover effects */}
+        
         <div className="flex flex-col items-center gap-8">
           <div className={`flex gap-16 mt-4 ${animate ? 'opacity-100' : 'opacity-0'} transition-all duration-1000 ease-out animation-delay-700`}>
             {['Draw', 'Collab', 'Platform'].map((label, index) => (
@@ -443,7 +440,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
             ))}
           </div>
           
-          {/* Download Buttons */}
+          
           <div className={`flex items-center gap-4 mt-4 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} transition-all duration-1000 ease-out animation-delay-800`}>
             <button
               onClick={scrollToDesktop}
@@ -460,7 +457,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
         
       </div>
 
-      {/* How DrawWave Works Section - full width section with 3D perspective effects */}
+   
       <section ref={demoSectionRef} id="demo-section" className="min-h-screen w-full flex flex-col items-center py-20 overflow-hidden perspective-[1200px]">
         <div className={`w-full max-w-5xl px-4 md:px-8 ${animate ? 'opacity-100 translate-y-0 rotate-x-0' : 'opacity-0 translate-y-10 rotate-x-2'} transition-all duration-1000 ease-out delay-1000 transform-gpu`}>
           <div className="text-center mb-16 transform-gpu hover:rotate-y-1 transition-all duration-500 hover:scale-105">
@@ -473,12 +470,12 @@ const Home = ({ onStartRoom }: HomeProps) => {
             <p className="text-base sm:text-lg text-white mt-5 mb-10 max-w-2xl mx-auto font-medium">Easy collaboration in three simple steps</p>
           </div>
           
-          {/* Steps Timeline with 3D effects */}
+         
           <div className="relative mt-16 pb-16 perspective-[1000px]">
-            {/* Timeline line */}
+           
             <div className="absolute h-full w-1 bg-gradient-to-b from-[#a855f7]/60 via-[#7e22ce]/60 to-transparent left-1/2 transform -translate-x-1/2 z-0 rounded-full shadow-glow animate-pulse-slow"></div>
             
-            {/* Step 1 */}
+           
             <div className="flex flex-col md:flex-row items-center mb-28 relative group">
               <div className={`w-full md:w-1/2 pr-0 md:pr-16 text-center md:text-right transition-all duration-700 transform-gpu ${animate ? 'translate-x-0 opacity-100 rotate-y-0' : '-translate-x-10 opacity-0 rotate-y-10'} hover:translate-z-10 hover:scale-105`} style={{ transitionDelay: '300ms' }}>
                 <div className="bg-[#1a002a]/60 backdrop-blur-md border border-purple-900/30 rounded-xl p-6 hover:border-purple-500/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/20">
@@ -495,14 +492,14 @@ const Home = ({ onStartRoom }: HomeProps) => {
               </div>
               
               <div className="w-full md:w-1/2 pl-0 md:pl-16 mt-6 md:mt-0 text-center md:text-left opacity-0">
-                {/* Empty space for layout */}
+               
               </div>
             </div>
             
-            {/* Step 2 */}
+ 
             <div className="flex flex-col md:flex-row items-center mb-28 relative group">
               <div className="w-full md:w-1/2 pr-0 md:pr-16 text-center md:text-right opacity-0">
-                {/* Empty space for layout */}
+              
               </div>
               
               <div className="absolute left-1/2 transform -translate-x-1/2 z-10 scale-100 group-hover:scale-125 transition-transform duration-300">
@@ -520,7 +517,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
               </div>
             </div>
             
-            {/* Step 3 */}
+            
             <div className="flex flex-col md:flex-row items-center relative group">
               <div className={`w-full md:w-1/2 pr-0 md:pr-16 text-center md:text-right transition-all duration-700 transform-gpu ${animate ? 'translate-x-0 opacity-100 rotate-y-0' : '-translate-x-10 opacity-0 rotate-y-10'} hover:translate-z-10 hover:scale-105`} style={{ transitionDelay: '1100ms' }}>
                 <div className="bg-[#1a002a]/60 backdrop-blur-md border border-purple-900/30 rounded-xl p-6 hover:border-purple-500/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/20">
@@ -537,12 +534,12 @@ const Home = ({ onStartRoom }: HomeProps) => {
               </div>
               
               <div className="w-full md:w-1/2 pl-0 md:pl-16 mt-6 md:mt-0 text-center md:text-left opacity-0">
-                {/* Empty space for layout */}
+                
               </div>
             </div>
           </div>
           
-          {/* Features Section */}
+        
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-16">
             {[
               {
@@ -594,7 +591,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
             ))}
           </div>
           
-          {/* Desktop Version Section */}
+       
           <div 
             ref={desktopSectionRef} 
             className="mt-32 mb-16 text-center relative z-50"
@@ -624,7 +621,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
                 Experience enhanced performance and additional features with our desktop application
               </p>
               
-              {/* Desktop Features Grid */}
+              
               <div 
                 className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-8 px-4 relative z-10"
                 style={{
@@ -666,7 +663,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
                 </div>
               </div>
               
-              {/* Download Button */}
+              
               <div 
                 className="flex justify-center space-x-4 relative z-20"
                 style={{
@@ -689,7 +686,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
             </div>
           </div>
           
-          {/* Demo Video Section */}
+     
           <div className="mt-32 mb-16">
             <div className={`text-center mb-8 transform-gpu ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} transition-all duration-1000 ease-out delay-1500`}>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 relative inline-block">
@@ -700,14 +697,13 @@ const Home = ({ onStartRoom }: HomeProps) => {
               </h2>
               <p className="text-white text-base sm:text-lg max-w-2xl mx-auto font-medium">Watch our demo to see how easy it is to collaborate in real-time</p>
             </div>
-            
-            {/* Video container using direct iframe without any overlays */}
+           
             <div 
               ref={videoSectionRef}
               className={`w-full max-w-4xl mx-auto transform-gpu ${animate ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-95'} transition-all duration-1000 ease-out delay-1600`}
               style={{ aspectRatio: '16/9', marginBottom: '20px' }}>
                  
-              {/* YouTube video - positioned as the only element */}
+            
               <iframe 
                 className="w-full h-full rounded-lg" 
                 src={`https://www.youtube.com/embed/00fwITgHBcQ${autoplayVideo ? '?autoplay=1&mute=0' : ''}`} 
@@ -718,7 +714,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
               ></iframe>
             </div>
             
-            {/* Decorative elements positioned separately */}
+       
             <div className="relative max-w-4xl mx-auto w-full h-8 mt-4">
               <div 
                 className="absolute -top-6 -left-6 w-12 h-12 bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-full blur-xl opacity-70 animate-pulse-slow"
@@ -743,7 +739,7 @@ const Home = ({ onStartRoom }: HomeProps) => {
         </div>
       </section>
       
-      {/* Footer */}
+    
       <p className={`absolute bottom-4 text-xs text-white/30 ${animate ? 'opacity-100' : 'opacity-0'} transition-all duration-1000 ease-out animation-delay-800`}>
         © {new Date().getFullYear()} DrawWave. All rights reserved.
       </p>
