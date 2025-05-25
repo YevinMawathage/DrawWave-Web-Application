@@ -5,7 +5,7 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  // Google Auth fields
+  // Google Auth 
   googleId: {
     type: String,
     sparse: true

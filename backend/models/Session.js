@@ -18,7 +18,7 @@ const SessionSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 86400 // Sessions expire after 24 hours
+    expires: 86400 
   },
   participants: [{
     name: String,
@@ -28,11 +28,11 @@ const SessionSchema = new mongoose.Schema({
     }
   }],
   canvasData: {
-    type: String,  // Base64 encoded canvas state
+    type: String,  
     default: ''
   },
   drawingLayerData: {
-    type: String,  // Base64 encoded drawing layer
+    type: String,  
     default: ''
   },
   lastUpdated: {

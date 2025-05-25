@@ -142,10 +142,10 @@ class VirtualPainterGUI(QWidget):
         
         main_layout.addLayout(control_panel)
         
-        # Set main layout
+     
         self.setLayout(main_layout)
         
-        # Connect signals
+    
         self.mouse_btn.clicked.connect(self.enable_mouse_mode)
         self.gesture_btn.clicked.connect(self.enable_gesture_mode)
         self.clear_btn.clicked.connect(self.clear_canvas)
@@ -155,18 +155,17 @@ class VirtualPainterGUI(QWidget):
         
         
         
-        # Initialize webcam
+        
         
         
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_camera_feed)
         self.timer.start(40)
     
-    # Keep existing functional methods unchanged below...
-    # (update_camera_feed, handle_gesture, back_button_click, etc.)
+  
     def update_camera_feed(self):
         if self.mode != "gesture":
-            return  # Skip camera/gesture when not in gesture mode
+            return  
         
         if not self.capture or not self.capture.isOpened():
             return
@@ -176,23 +175,23 @@ class VirtualPainterGUI(QWidget):
             print("❌ Could not access the webcam.")
             return
         
-        frame = cv2.flip(frame, 1)  # Mirror the image for intuitive interaction
+        frame = cv2.flip(frame, 1)  
         frame, result = self.hand_tracker.detect_hands(frame)
 
-        # Process hand gestures if any landmarks are detected
+       
         if result.multi_hand_landmarks:
             landmarks = result.multi_hand_landmarks[0]
             gesture = self.hand_tracker.recognize_gesture(landmarks)
             
-            # Update cursor position to track index finger tip
+           
             index_tip = landmarks.landmark[8]
             
-            # Set cursor position in window coordinates
+           
             self.cursor_x = int(index_tip.x * self.canvas.width)
             self.cursor_y = int(index_tip.y * self.canvas.height)
             self.cursor_visible = True
             
-            # Update cursor color based on gesture
+            
             if gesture == "drawing":
                 self.cursor_mode = "DRAW"
             elif gesture == "erase":
@@ -202,22 +201,22 @@ class VirtualPainterGUI(QWidget):
             else:
                 self.cursor_mode = "IDLE"
             
-            # Print debug information
+        
             print(f"Cursor position: ({self.cursor_x}, {self.cursor_y}) Mode: {self.cursor_mode}")
             
-            # Process the gesture
+         
             self.handle_gesture(gesture, landmarks)
         else:
-            # If no hand detected, hide cursor
+           
             self.cursor_visible = False
         
-        # Draw cursor directly on canvas widget
+        
         self.canvas_widget.set_cursor(self.cursor_x, self.cursor_y, self.cursor_visible, self.cursor_mode)
         
-        # Always force the canvas widget to update
+ 
         self.canvas_widget.update()
 
-        # Convert the frame to a format suitable for displaying in PyQt
+        
         height, width, channel = frame.shape
         bytes_per_line = 3 * width
         q_img = QImage(frame.data, width, height, bytes_per_line, QImage.Format_BGR888)
@@ -232,11 +231,11 @@ class VirtualPainterGUI(QWidget):
         index_tip = landmarks.landmark[8]
 
         if gesture == "drawing":
-            # Use raw index tip for responsive drawing
+           
             self.canvas.draw((index_tip.x, index_tip.y))
 
         elif gesture == "erase":
-            # Keep midpoint logic for erasing if preferred
+            
             middle_tip = landmarks.landmark[12]
             midpoint = ((index_tip.x + middle_tip.x) / 2, (index_tip.y + middle_tip.y) / 2)
             self.canvas.erase(midpoint)
@@ -247,20 +246,20 @@ class VirtualPainterGUI(QWidget):
 
         
     def back_button_click(self):
-        self.close()  # Close the current screen
+        self.close()  
         from start_screen import StartScreen
-        self.start_screen = StartScreen()  # Go back to the start screen
+        self.start_screen = StartScreen() 
         self.start_screen.show()
 
 
     def enable_mouse_mode(self):
         self.mode = "mouse"
-        self.capture.release()  # Stop webcam
+        self.capture.release()  
         print("[MODE] Mouse Drawing Enabled")
 
     def enable_gesture_mode(self):
         self.mode = "gesture"
-        self.capture = cv2.VideoCapture(0)  # Restart webcam
+        self.capture = cv2.VideoCapture(0) 
         print("[MODE] Gesture Drawing Enabled")
 
     def clear_canvas(self):
@@ -285,11 +284,11 @@ class VirtualPainterGUI(QWidget):
         """Handle color selection with preview"""
         color = QColorDialog.getColor()
         if color.isValid():
-            # Convert to BGR for OpenCV
+            
             r, g, b = color.red(), color.green(), color.blue()
             self.canvas.change_color((b, g, r))
             
-            # Update preview
+           
             self.color_preview.setStyleSheet(f"""
                 QLabel {{
                     background-color: {color.name()};

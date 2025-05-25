@@ -8,7 +8,6 @@ const Preloader = ({ onFinished }: PreloaderProps) => {
   const [progress, setProgress] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
   
-  // Simulate loading progress
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress(prev => {
@@ -20,16 +19,14 @@ const Preloader = ({ onFinished }: PreloaderProps) => {
     return () => clearInterval(interval);
   }, []);
   
-  // Trigger fade out when progress is complete
   useEffect(() => {
     if (progress === 100) {
       const timeout = setTimeout(() => {
         setFadeOut(true);
         
-        // Allow time for fade out animation before notifying parent
         setTimeout(() => {
           onFinished();
-        }, 1000); // Match this with the transition duration
+        }, 1000); 
       }, 500);
       
       return () => clearTimeout(timeout);

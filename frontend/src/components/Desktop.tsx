@@ -3,29 +3,25 @@ import VirtualPainter from './VirtualPainter';
 import Navbar from './Navbar';
 
 interface DesktopProps {
-  // Add any props needed later
+  
 }
 
 const Desktop: React.FC<DesktopProps> = () => {
-  // Create a ref for the download function
+  
   const downloadCanvasRef = React.useRef<(() => void) | null>(null);
   const [sessionId, setSessionId] = React.useState('');
   const [inSession, setInSession] = React.useState(false);
 
-  // Function to handle room events from VirtualPainter
+  
   const handleSessionUpdate = (isInSession: boolean, currentSessionId: string, _hostStatus: boolean) => {
     setInSession(isInSession);
     setSessionId(currentSessionId);
   };
 
-  // Function to handle going back to home when leaving session
   const handleLeaveRoom = () => {
-    // This will be handled by the VirtualPainter component
-    // We'll dispatch a custom event that VirtualPainter will listen for
     const leaveEvent = new CustomEvent('leaveRoom');
     window.dispatchEvent(leaveEvent);
     
-    // After leaving the room, navigate back to home
     setTimeout(() => {
       const isStillInSession = localStorage.getItem('drawwave_inSession') === 'true';
       if (!isStillInSession) {

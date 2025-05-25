@@ -19,7 +19,6 @@ const Navbar = ({ inSession, sessionId, onLeaveRoom, onDownloadCanvas, scrollToV
     setShowConfirmation(false);
     onLeaveRoom();
     console.log('Leave room action confirmed');
-    // Redirect to home page after a short delay to allow onLeaveRoom to complete
     setTimeout(() => {
       window.location.href = '/';
     }, 300);
@@ -33,13 +32,10 @@ const Navbar = ({ inSession, sessionId, onLeaveRoom, onDownloadCanvas, scrollToV
           <div 
             onClick={() => {
               if (inSession) {
-                // If in a session, just go home
                 window.location.href = '/';
               } else if (scrollToVideo) {
-                // If on home page and scrollToVideo is provided, scroll to the video section
                 scrollToVideo();
               } else {
-                // Fallback to home page redirect
                 window.location.href = '/';
               }
             }}
@@ -49,13 +45,13 @@ const Navbar = ({ inSession, sessionId, onLeaveRoom, onDownloadCanvas, scrollToV
           </div>
         </div>
 
-        {/* All controls grouped on the right corner */}
+   
         <div className="flex items-center space-x-2">
-          {/* Login button */}
+     
           <div className="mr-2">
             <LoginButton />
           </div>
-          {/* Session ID display - only visible when in session */}
+       
           {inSession && sessionId && (
             <div className="hidden md:flex items-center bg-indigo-900 rounded-md px-2 py-1.5 mr-2">
               <div className="flex flex-col mr-1">
@@ -82,19 +78,15 @@ const Navbar = ({ inSession, sessionId, onLeaveRoom, onDownloadCanvas, scrollToV
           {inSession && onDownloadCanvas && (
             <button
               onClick={() => {
-                // Add animation class before download
                 const btnElement = document.getElementById('download-btn');
                 if (btnElement) {
                   btnElement.classList.add(styles.downloadAnimation);
                   
-                  // Remove animation class after animation completes
                   setTimeout(() => {
                     btnElement.classList.remove(styles.downloadAnimation);
-                    // Execute download after animation starts
                     onDownloadCanvas();
                   }, 300);
                 } else {
-                  // Fallback if element not found
                   onDownloadCanvas();
                 }
               }}
@@ -130,7 +122,6 @@ const Navbar = ({ inSession, sessionId, onLeaveRoom, onDownloadCanvas, scrollToV
             <button
               onClick={() => {
                 onLeaveRoom();
-                // Redirect to home page after a short delay
                 setTimeout(() => {
                   window.location.href = '/';
                 }, 300);

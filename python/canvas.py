@@ -14,26 +14,21 @@ class Canvas:
         self.history = []
         self.redo_stack = []
         self.cursor_position = (0, 0)
-        self.history_limit = 50  # Added limit to history stack
+        self.history_limit = 50  
         
         
     def set_cursor_position(self, x, y):
-        # Convert normalized coordinates (0-1) to actual pixels
         x_pixel = int(x * self.width)
         y_pixel = int(y * self.height)
         
-        # Ensure the cursor position is within canvas bounds
         x_pixel = max(0, min(self.width - 1, x_pixel))
         y_pixel = max(0, min(self.height - 1, y_pixel))
         
-        # Store the cursor position
         self.cursor_position = (x_pixel, y_pixel)
 
     def draw_cursor(self):
-        # Create a temporary copy of canvas for cursor drawing
         temp_canvas = self.canvas.copy()
         
-        # Store cursor animation state if not already present
         if not hasattr(self, '_cursor_pulse_value'):
             self._cursor_pulse_value = 0
         if not hasattr(self, '_cursor_pulse_direction'):
@@ -41,44 +36,39 @@ class Canvas:
         if not hasattr(self, '_cursor_mode'):
             self._cursor_mode = "IDLE"
             
-        # Create a pulsing effect for the cursor
+        
         self._cursor_pulse_value += 0.5 * self._cursor_pulse_direction
         if self._cursor_pulse_value >= 10 or self._cursor_pulse_value <= 0:
             self._cursor_pulse_direction *= -1
-            
-        # Determine cursor color based on mode
+        
         if hasattr(self, '_cursor_mode'):
             if self._cursor_mode == "DRAW":
-                cursor_color = (0, 165, 255)  # Orange for drawing
+                cursor_color = (0, 165, 255)  
             elif self._cursor_mode == "ERASE":
-                cursor_color = (0, 0, 255)    # Red for erasing
+                cursor_color = (0, 0, 255)    
             else:
-                cursor_color = (255, 0, 0)    # Blue for idle
-        else:
-            cursor_color = (255, 0, 0)  # Default blue
+                cursor_color = (255, 0, 0)   
+            cursor_color = (255, 0, 0)  
             
-        # Create a more sophisticated cursor
-        # 1. Inner solid circle
         inner_radius = 5
         cv2.circle(temp_canvas, self.cursor_position, inner_radius, cursor_color, -1)
         
-        # 2. Pulsing outer ring
         outer_radius = 7 + int(self._cursor_pulse_value/2)
         cv2.circle(temp_canvas, self.cursor_position, outer_radius, cursor_color, 2)
         
-        # 3. Crosshair for precise positioning
+      
         crosshair_size = 8
         x, y = self.cursor_position
         cv2.line(temp_canvas, (x - crosshair_size, y), (x + crosshair_size, y), cursor_color, 1)
         cv2.line(temp_canvas, (x, y - crosshair_size), (x, y + crosshair_size), cursor_color, 1)
         
-        # 4. Add mode indicator text
+        
         if hasattr(self, '_cursor_mode'):
             cv2.putText(temp_canvas, self._cursor_mode, 
                       (self.cursor_position[0] + 15, self.cursor_position[1] - 15),
                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, cursor_color, 2)
         
-        return temp_canvas  # Return for display without saving to history
+        return temp_canvas  
 
 
 
@@ -87,9 +77,8 @@ class Canvas:
 
         if self.previous_point_gesture is None:
             self.previous_point_gesture = current_point
-            return  # Don't draw on the first point
+            return  
             
-        # Only draw if movement is significant
         if self.previous_point_gesture != current_point:
             cv2.line(self.canvas, self.previous_point_gesture, current_point, self.color, self.brush_size)
             self.previous_point_gesture = current_point
@@ -161,11 +150,10 @@ class Canvas:
         if canvas_image is None:
             return False
             
-        # Ensure the image has the correct dimensions
+     
         if canvas_image.shape[0] != self.height or canvas_image.shape[1] != self.width:
             canvas_image = cv2.resize(canvas_image, (self.width, self.height))
             
-        # Ensure the image has 3 channels (BGR)
         if len(canvas_image.shape) == 2 or canvas_image.shape[2] == 1:
             canvas_image = cv2.cvtColor(canvas_image, cv2.COLOR_GRAY2BGR)
         elif canvas_image.shape[2] == 4:  # RGBA
@@ -187,7 +175,7 @@ class Canvas:
         if color is None:
             color = self.color
             
-        # Make sure points are within canvas bounds
+        
         x1, y1 = start_point
         x2, y2 = end_point
         

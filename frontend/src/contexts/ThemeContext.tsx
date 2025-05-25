@@ -24,10 +24,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   useEffect(() => {
-    // Update localStorage whenever theme changes
     localStorage.setItem('drawwave-theme', theme);
     
-    // Apply theme class to body
     if (theme === 'dark') {
       document.body.classList.add('light-theme');
       document.body.classList.remove('dark-theme');

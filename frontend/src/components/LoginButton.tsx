@@ -7,7 +7,6 @@ const LoginButton = () => {
   const [imageError, setImageError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Handle click outside to close menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {

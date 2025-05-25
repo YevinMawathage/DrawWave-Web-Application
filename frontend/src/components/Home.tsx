@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import '../styles/HomeAnimations.css'; // Import the animations CSS file
+import '../styles/HomeAnimations.css'; 
 
 interface HomeProps {
   onStartRoom: () => void;
@@ -18,13 +18,10 @@ const Home = ({ onStartRoom }: HomeProps) => {
   const videoSectionRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   
-  // Get auth context to check user authentication status and user information
   const { user, isAuthenticated, login, logout } = useAuth();
   
-  // Animation frames reference
   const animationFrameRef = useRef<number | null>(null);
   
-  // Handle clicks outside the profile menu to close it
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
@@ -38,62 +35,48 @@ const Home = ({ onStartRoom }: HomeProps) => {
     };
   }, []);
   
-  // Function to scroll to YouTube video and autoplay it
   const scrollToDemo = () => {
-    // Set autoplay to true when View Demo is clicked
     setAutoplayVideo(true);
     
-    // Scroll to the YouTube video section
     if (videoSectionRef.current) {
       videoSectionRef.current.scrollIntoView({ behavior: 'smooth' });
     } else {
-      // Fallback if video section reference is not available
       window.scrollTo({
-        top: window.innerHeight * 2, // Scroll further down to where the video likely is
+        top: window.innerHeight * 2, 
         behavior: 'smooth'
       });
     }
   };
   
-  // Function to scroll to the YouTube video section
   const scrollToVideo = () => {
-    // Set autoplay to true when scrolling to video
     setAutoplayVideo(true);
     
-    // Scroll to the video section
     if (videoSectionRef.current) {
       videoSectionRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
-  // Function to scroll to desktop section
   const scrollToDesktop = () => {    
-    // Scroll to the desktop section
     if (desktopSectionRef.current) {
       desktopSectionRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
   
-  // Handle scroll events for parallax effects
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
     };
 
-    // Add scroll event listener
     window.addEventListener('scroll', handleScroll, { passive: true });
 
-    // Clean up event listener
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
   useEffect(() => {
-    // Start animations after component mounts
     setAnimate(true);
     
-    // Setup matrix rain effect
     const setupMatrixEffect = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -101,60 +84,46 @@ const Home = ({ onStartRoom }: HomeProps) => {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       
-      // Make canvas full screen
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       
-      // Characters to display
       const chars = '01';
       const fontSize = 12;
       const columns = Math.floor(canvas.width / fontSize);
       
-      // Array for storing the current y position of each column
       const drops: number[] = [];
       
-      // Initialize drops array
       for (let i = 0; i < columns; i++) {
         drops[i] = Math.random() * -100;
       }
       
       const draw = () => {
-        // Set a semi-transparent black to create fade effect
         ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        ctx.fillStyle = '#a855f712'; // Very faint purple
+        ctx.fillStyle = '#a855f712'; 
         ctx.font = `${fontSize}px monospace`;
         
-        // For each column
         for (let i = 0; i < drops.length; i++) {
-          // Random character
           const text = chars[Math.floor(Math.random() * chars.length)];
           
-          // Draw the character
           ctx.fillText(text, i * fontSize, drops[i] * fontSize);
           
-          // Increment y coordinate and reset if it's at the bottom
           if (drops[i] * fontSize > canvas.height && Math.random() > 0.98) {
             drops[i] = 0;
           }
           
-          // Move it down randomly
           drops[i] += Math.random() * 0.3;
         }
         
-        // Call the animation recursively
         animationFrameRef.current = requestAnimationFrame(draw);
       };
       
-      // Start animation
       draw();
     };
     
-    // Initialize animations
     setupMatrixEffect();
     
-    // Handle window resize for canvas
     const handleResize = () => {
       if (canvasRef.current) {
         canvasRef.current.width = window.innerWidth;
@@ -164,7 +133,6 @@ const Home = ({ onStartRoom }: HomeProps) => {
     
     window.addEventListener('resize', handleResize);
     
-    // Cleanup animations and event listeners
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);

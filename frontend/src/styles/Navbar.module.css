@@ -5,7 +5,6 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Animation for download button */
 @keyframes downloadPulse {
   0% {
     transform: scale(1);
@@ -22,7 +21,6 @@
   animation: downloadPulse 0.3s ease-in-out;
 }
 
-/* Additional hover effect */
 .hoverScale:hover {
   transform: scale(1.1);
   transition: transform 0.2s ease;
